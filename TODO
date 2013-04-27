@@ -1,0 +1,14 @@
+* Write a status module that exports a variable that can be sent from
+  each worker to a status poller endpoint.  Variable could be JSON or
+  some other format, including counts of requests served, connections,
+  worker and parent PID, hostname, configuration file, etc - enough so
+  that an application that receives this information from many nginx
+  instances can aggregate the data and provide some sort of visual
+  representation of global nginx (instance and worker) status.
+
+* Write the web application that would receive this information and 
+  render it.
+
+* Write an example configuration module that polls an endpoint for
+  updates to the worker configuration.  An example update might enable
+  or disable individual upstream servers.
