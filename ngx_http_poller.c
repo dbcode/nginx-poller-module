@@ -17,6 +17,8 @@ static char *ngx_http_poller(ngx_conf_t *cf, ngx_command_t *dummy, void *conf);
 static ngx_int_t ngx_http_poller_init_process(ngx_cycle_t *cycle);
 static void ngx_http_poller_event(ngx_event_t *ev);
 
+static ngx_str_t ngx_http_poller_method_get = ngx_string("GET");
+
 static ngx_command_t ngx_http_poller_commands[] = {
 
   { ngx_string("poller"),
@@ -135,7 +137,7 @@ ngx_http_poller_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
   value = cf->args->elts;
   poller->name = value[1];
-
+  poller->method = ngx_http_poller_method_get;
   poller->upstream.buffering = 1;
   poller->upstream.connect_timeout = 60000;
   poller->upstream.read_timeout = 60000;
@@ -163,6 +165,21 @@ ngx_http_poller_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
   cf->handler_conf = conf;
 
   rv = ngx_conf_parse(cf, NULL);
+  if (rv != NGX_CONF_OK) {
+    return rv;
+  }
+
+  if (poller->endpoint.data == NULL) {
+    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+		       "[poller] %V: endpoint never declared",
+		       &poller->name);
+    return NGX_CONF_ERROR;
+  }
+
+  /* Other required fields (uri, interval) are complex values that may
+   * contain variables.  We don't require these to evaluate to valid
+   * values initially.
+   */
 
   *cf = ctx.cf;
 
@@ -172,7 +189,7 @@ ngx_http_poller_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
   poller->upstream.busy_buffers_size = 2 * poller->upstream.buffer_size;
 
-  return rv;
+  return NGX_CONF_OK;
 }
 
 static char *
@@ -291,7 +308,8 @@ ngx_http_poller_set_method(ngx_conf_t *cf,
 			   ngx_http_poller_t *poller,
 			   ngx_str_t *value)
 {
-  if (poller->method.data != NULL) {
+  if (poller->method.data != NULL &&
+      poller->method.data != ngx_http_poller_method_get.data) {
     ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
 		       "[poller] %V: method already declared",
 		       &poller->name);
