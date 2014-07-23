@@ -11,7 +11,6 @@ typedef struct {
 } ngx_http_poller_conf_ctx_t;
 
 static void *ngx_http_poller_create_conf(ngx_conf_t *cf);
-static ngx_int_t ngx_http_poller_postconf(ngx_conf_t *cf);
 static char *ngx_http_poller_block(ngx_conf_t *cf, ngx_command_t *cmd,
 				   void *conf);
 static char *ngx_http_poller(ngx_conf_t *cf, ngx_command_t *dummy, void *conf);
@@ -32,7 +31,7 @@ static ngx_command_t ngx_http_poller_commands[] = {
 
 static ngx_http_module_t ngx_http_poller_module_ctx = {
   NULL,                         /* preconfiguration */
-  ngx_http_poller_postconf,     /* postconfiguration */
+  NULL,                         /* postconfiguration */
   ngx_http_poller_create_conf,  /* create main configuration */
   NULL,                         /* init main configuration */
   NULL,                         /* create server configuration */
@@ -279,6 +278,11 @@ ngx_http_poller_set_endpoint(ngx_conf_t *cf,
   poller->url.uri_part = 1;
   poller->url.no_resolve = 1;
 
+  poller->upstream.upstream = ngx_http_upstream_add(cf, &poller->url, 0);
+  if (poller->upstream.upstream == NULL) {
+    return NGX_CONF_ERROR;
+  }
+
   return NGX_CONF_OK;
 }
 
@@ -352,29 +356,6 @@ ngx_http_poller(ngx_conf_t *cf, ngx_command_t *dummy, void *conf)
   }
 
   return rv;
-}
-
-static ngx_int_t
-ngx_http_poller_postconf(ngx_conf_t *cf)
-{
-  ngx_http_poller_conf_t *pcf;
-  ngx_http_poller_t      *poller;
-  ngx_uint_t              i;
-
-  pcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_poller_module);
-  poller = pcf->pollers.elts;
-
-  for (i = 0; i < pcf->pollers.nelts; ++i) {
-    poller[i].upstream.upstream = ngx_http_upstream_add(cf, &poller[i].url, 0);
-    if (poller[i].upstream.upstream == NULL) {
-      ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-			 "[poller] %V: could not add upstream for %V",
-			 &poller[i].name, &poller[i].endpoint);
-      return NGX_ERROR;
-    }
-  }
-
-  return NGX_OK;
 }
 
 /* this should be called after the poller was found in the config. */
