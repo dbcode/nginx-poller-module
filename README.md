@@ -123,29 +123,18 @@ How to use this module
 ----------------------
 
 Like all other third party modules, this module needs to be compiled
-into your nginx binary.  First, you may wish to install the module
-in your /usr/local/share (or $PREFIX/share):
+into your nginx binary.  You can add the module to your nginx build by 
+configuring nginx like so:
 
-    ./configure
-    make install
-
-This will copy the following files to $PREFIX/share/nginx-poller-module:
-
-    config
-    ngx_http_poller.c
-    ngx_http_poller.h
-
-You can add the module to your nginx build by configuring nginx like so,
-assuming you had installed nginx-poller-module to /usr/local:
-
-    ./configure --add-module=/usr/local/share/nginx-poller-module
+    ./configure --add-module=/your/path/to/nginx-poller-module
 
 If you wish to call ngx_http_poller_set_handler, you will also need to
 add the same directory to your includes:
 
     ./configure \
-      --with-cc-opt="-I/usr/local/share/nginx-poller-module" \
-      --add-module=/usr/local/share/nginx-poller-module
+      --with-cc-opt="-I/your/path/to/nginx-poller-module" \
+      --add-module=/your/path/to/nginx-poller-module \
+      --add-module=/your/path/to/your-other-module
 
 26 April 2013
 
